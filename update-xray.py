@@ -15,7 +15,15 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+def _find_root() -> Path:
+    here = Path(__file__).resolve()
+    for candidate in [here.parent, *here.parents]:
+        if (candidate / "xray.version").exists():
+            return candidate
+    return here.parents[2]
+
+
+ROOT = _find_root()
 
 
 def main() -> int:
