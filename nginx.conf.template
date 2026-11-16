@@ -39,16 +39,24 @@ http {
             return 200 "ok\n";
         }
 
+        # XHTTP is plain HTTP streaming, not WebSocket: no Upgrade headers.
+        # proxy_buffering off + proxy_request_buffering off are required,
+        # otherwise nginx buffers the stream and the connection stalls.
+        # client_max_body_size 0: upload data travels in request bodies,
+        # the default 1 MB limit would truncate it.
         location __VMESS_WSPATH__ {
             proxy_redirect off;
             proxy_pass http://127.0.0.1:11000;
             proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
+            proxy_set_header Connection "";
             proxy_set_header Host $http_host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_buffering off;
+            proxy_request_buffering off;
+            proxy_cache off;
+            client_max_body_size 0;
             proxy_read_timeout 3600s;
             proxy_send_timeout 3600s;
         }
@@ -57,12 +65,15 @@ http {
             proxy_redirect off;
             proxy_pass http://127.0.0.1:12000;
             proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
+            proxy_set_header Connection "";
             proxy_set_header Host $http_host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_buffering off;
+            proxy_request_buffering off;
+            proxy_cache off;
+            client_max_body_size 0;
             proxy_read_timeout 3600s;
             proxy_send_timeout 3600s;
         }
