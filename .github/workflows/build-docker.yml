@@ -60,7 +60,7 @@ jobs:
         with:
           images: |
             ${{ env.GHCR_IMAGE }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/v2-koyeb
+            ${{ secrets.DOCKERHUB_USERNAME }}/x-paas
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=xray-${{ steps.xray.outputs.version }}
