@@ -1,10 +1,14 @@
 #!/bin/sh
 # PaaS entrypoint: render the nginx and Xray configs from templates,
 # validate both, then start nginx and exec Xray as PID 1.
-# Required: UUID. Optional: PORT (default 8080), VMESS_WSPATH, VLESS_WSPATH.
+# Required: UUID. Optional: PORT (default 80, same as the original repo),
+# VMESS_WSPATH, VLESS_WSPATH.
+# Koyeb does not inject $PORT the way Render/Railway do, it routes to the
+# port configured on the service (80 in the original Deploy button), so
+# the default must stay 80. Render/Railway inject $PORT and override this.
 set -eu
 
-PORT="${PORT:-8080}"
+PORT="${PORT:-80}"
 UUID="${UUID:-}"
 VMESS_WSPATH="${VMESS_WSPATH:-/vmess}"
 VLESS_WSPATH="${VLESS_WSPATH:-/vless}"
