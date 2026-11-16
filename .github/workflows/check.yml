@@ -58,7 +58,7 @@ jobs:
             echo "error: failed to parse SHA-256 from .dgst files" >&2
             exit 1
           fi
-          python3 .github/scripts/update-xray.py \
+          python3 update-xray.py \
             --version "$LATEST" \
             --published "${{ steps.latest.outputs.published }}" \
             --amd64-sha "$AMD64_SHA" \
