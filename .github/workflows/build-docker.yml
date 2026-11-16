@@ -52,7 +52,7 @@ jobs:
         with:
           images: |
             ${{ env.GHCR_IMAGE }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/v2-koyeb
+            ${{ secrets.DOCKERHUB_USERNAME }}/x-koyeb
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
