@@ -14,7 +14,7 @@ PaaS 在前面做 TLS 终止，所以这里不做 Reality / XTLS-Vision，那是
 | 变量 | 是否必须 | 默认值 | 备注 |
 | --- | --- | --- | --- |
 | `UUID` | 是 | 无 | 必须自己生成，绝不能用旧 README 里的公开默认值，启动时为空或为默认值会直接报错退出 |
-| `PORT` | 否 | `8080` | PaaS 注入的端口，Koyeb / Render / Railway 都会给，填什么就监听什么 |
+| `PORT` | 否 | `80` | PaaS 注入的端口就听那个；没注入时默认 80，和原仓库一致。注意：PaaS 服务上配置的端口必须和这里一致，Koyeb 默认就是 80，Render / Railway 会自己注入 `$PORT` 覆盖这个默认值 |
 | `VMESS_WSPATH` | 否 | `/vmess` | 现在是 XHTTP 路径，以 `/` 开头；变量名没改，PaaS 上已填的值不用动 |
 | `VLESS_WSPATH` | 否 | `/vless` | 现在是 XHTTP 路径，以 `/` 开头，不能和 VMess 相同 |
 
@@ -26,9 +26,27 @@ uuidgen
 python3 -c "import uuid; print(uuid.uuid4())"
 ```
 
+## 自动更新 Xray 版本
+
+不用手动盯着 Xray 发版，有两个工作流配合：
+
+- `check-xray.yml`：每周一 03:00 UTC（北京时间 11:00）检查一次，也可以在 Actions 页手动点 `Run workflow` 立即测一次。它用 GitHub API 查 Xray-core 的最新正式版（不含预发布版），和 `xray.version` 里的当前版本比对。
+- 没新版：什么都不做，不提交、不构建。
+- 有新版：自动拉新版两个架构的 `.dgst` 文件取 SHA-256，用 `.github/scripts/update-xray.py` 同步改 `xray.version`、`Dockerfile` 里的版本号和两个 SHA、以及 README 里的版本号，然后提交推送。这一推会触发 `docker.yml` 自动构建。
+
+构建出来的镜像会多两个带 Xray 版本的 tag，一眼就能看出里面是哪个核心：
+
+- `ghcr.io/<owner>/<repo>:xray-v26.11.9`
+- `ghcr.io/<owner>/<repo>:v26.11.9`
+- Docker Hub 同理：`<user>/v2-koyeb:xray-v26.11.9`
+
+另外还保留 `latest` 和短 commit SHA 的 tag。PaaS 上想固定用某个 Xray 版本，就选 `xray-v26.11.9` 这种 tag，别用 `latest`。
+
+注意：定时任务只在默认分支上跑，而且 GitHub 可能会延迟执行；想立即验证就手动跑一次 `check-xray.yml`。现在最新就是 `v26.11.9`，跑一次应该是什么都不做。
+
 ## 部署
 
-1. 把这 5 个文件放回原仓库对应位置：`Dockerfile`、`entrypoint.sh`、`nginx.conf.template`、`config.json.template`、`.github/workflows/docker.yml`，另外加 `.dockerignore`。
+1. 把这些文件放回原仓库对应位置：`Dockerfile`、`entrypoint.sh`、`nginx.conf.template`、`config.json.template`、`xray.version`、`.github/workflows/docker.yml`、`.github/workflows/check-xray.yml`、`.github/scripts/update-xray.py`，另外加 `.dockerignore`。
 2. 删掉旧的 `.github/workflows/koyeb.yml`，它只手动触发、用的是旧版 Action。
 3. 镜像同时推到 GHCR（`ghcr.io/<owner>/<repo>`）和 Docker Hub（`<user>/v2-koyeb`，保持你原来 PaaS 拉取的地址不变）。Docker Hub 需要在仓库 Secrets 里配好 `DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`，GHCR 用自带的 `GITHUB_TOKEN` 就行，不用额外配。
 4. 在 PaaS 上从镜像部署，填好 `UUID`，健康检查用 `/health`。
