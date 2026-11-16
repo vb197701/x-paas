@@ -47,11 +47,12 @@ RUN apk add --no-cache ca-certificates \
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
 
-# Documentary only. PaaS platforms inject their own $PORT at runtime
-# and the entrypoint makes nginx listen on it.
-EXPOSE 8080
+# Documentary only. PaaS platforms that inject $PORT override the
+# default at runtime and the entrypoint makes nginx listen on it.
+# Default is 80 to match the original repo and Koyeb's port 80 setting.
+EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD sh -c 'wget -q -O /dev/null "http://127.0.0.1:${PORT:-8080}/health"'
+  CMD sh -c 'wget -q -O /dev/null "http://127.0.0.1:${PORT:-80}/health"'
 
 ENTRYPOINT ["/app/entrypoint.sh"]
