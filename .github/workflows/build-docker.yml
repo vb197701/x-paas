@@ -17,8 +17,9 @@ env:
   # existing PaaS image address working: docker.io/<user>/v2-koyeb.
   # It needs DOCKERHUB_USERNAME and DOCKERHUB_TOKEN in repo Secrets,
   # the same secrets the old workflow used (token, not password).
+  # Xray version is not hardcoded here: it is read from xray.version
+  # (single source of truth, updated weekly by check-xray.yml).
   GHCR_IMAGE: ghcr.io/${{ github.repository }}
-  XRAY_VERSION: v26.11.9
 
 jobs:
   build:
@@ -26,6 +27,13 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v7
+
+      - name: Read Xray version
+        id: xray
+        run: |
+          VERSION=$(tr -d '[:space:]' < xray.version)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Xray-core: $VERSION"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -52,9 +60,11 @@ jobs:
         with:
           images: |
             ${{ env.GHCR_IMAGE }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/x-koyeb
+            ${{ secrets.DOCKERHUB_USERNAME }}/v2-koyeb
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=xray-${{ steps.xray.outputs.version }}
+            type=raw,value=${{ steps.xray.outputs.version }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,format=short
@@ -66,7 +76,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
-            XRAY_VERSION=${{ env.XRAY_VERSION }}
+            XRAY_VERSION=${{ steps.xray.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
